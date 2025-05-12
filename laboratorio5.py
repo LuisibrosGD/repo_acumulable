@@ -1,12 +1,5 @@
-"""
-c profe no me acuerdo de las especificaciones que pidió
-
-no se si se tiene que analizar tambien identificadores(nombres)
-"""
-
-
 class AnalizadorLexico:
-    def __init__(self):
+    def _init_(self):
         self.tokens = []
         self.errores = []
 
@@ -23,13 +16,8 @@ class AnalizadorLexico:
         return char in {' ', '\t', '\n', '\r'}
 
     def analizar_credito(self, codigo, i):
-        inicio = i
         n = len(codigo)
-
-        if i + 3 >= n:
-            return i, None
-
-        if codigo[i:i + 3] != 'CRE':
+        if i + 3 >= n or codigo[i:i + 3] != 'CRE':
             return i, None
 
         i += 3
@@ -49,7 +37,6 @@ class AnalizadorLexico:
         return i, ('crédito', f"CRE{num_str}")
 
     def analizar_hexadecimal(self, codigo, i):
-        inicio = i
         n = len(codigo)
         num_str = ""
 
@@ -68,7 +55,6 @@ class AnalizadorLexico:
         return i, ('Numero hexadecimal', num_str)
 
     def analizar_numero(self, codigo, i):
-        inicio = i
         n = len(codigo)
         num_str = ""
         es_real = False
@@ -81,7 +67,7 @@ class AnalizadorLexico:
                 tiene_digitos = True
             elif codigo[i] == '.':
                 if es_real:
-                    return i, None
+                    break  # Detenerse si ya se encontró un punto
                 es_real = True
                 num_str += codigo[i]
                 i += 1
@@ -109,7 +95,7 @@ class AnalizadorLexico:
                 i += 1
                 continue
 
-            # Intentar crédito primero
+            # Intentar crédito
             j, token = self.analizar_credito(codigo, i)
             if token:
                 self.tokens.append(token)
@@ -123,6 +109,14 @@ class AnalizadorLexico:
                 i = j
                 continue
 
+            # Manejar caso como ".36" => "0.36"
+            if char == '.' and i + 1 < n and self.es_digito(codigo[i + 1]):
+                j, token = self.analizar_numero('0' + codigo[i:], 0)
+                if token:
+                    self.tokens.append(token)
+                    i += j - 1  # Ajuste para posición correcta
+                    continue
+
             # Intentar hexadecimal
             if self.es_hex_digito(char):
                 j, token = self.analizar_hexadecimal(codigo, i)
@@ -131,7 +125,7 @@ class AnalizadorLexico:
                     i = j
                     continue
 
-            # Manejar 'x' y '00' como casos especiales
+            # Manejar 'x' y '00'
             if char == 'x':
                 self.errores.append(('error', 'x'))
                 i += 1
@@ -154,10 +148,9 @@ class AnalizadorLexico:
             print(f"{error[1]} {error[0]}")
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     analizador = AnalizadorLexico()
-    # codigo_ejemplo = input("ingrese el codigo ejemplo: ")
-    codigo_ejemplo = "234 \t CRE45 \n 7.8 CRE20 4Ax00 CRE85x00"
+    codigo_ejemplo = input("entrada a analizar: ")
 
     analizador.analizar(codigo_ejemplo)
     analizador.imprimir_resultados()
